@@ -1,1 +1,1 @@
-web: ./target/release/lodestone_api
+web: ROCKET_PORT=$PORT ROCKET_ENV=prod ./target/release/lodestone_api
