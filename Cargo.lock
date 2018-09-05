@@ -515,7 +515,7 @@ dependencies = [
 name = "lodestone_api"
 version = "0.1.0"
 dependencies = [
- "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ffxiv_types 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lodestone_parser 0.1.0 (git+https://github.com/jkcclemens/lodestone_parser)",
  "lodestone_scraper 0.1.0 (git+https://github.com/jkcclemens/lodestone_scraper)",
  "rocket 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -528,7 +528,7 @@ dependencies = [
 [[package]]
 name = "lodestone_parser"
 version = "0.1.0"
-source = "git+https://github.com/jkcclemens/lodestone_parser#93356337fe395c7f153fe92c0dc309c46cc3df67"
+source = "git+https://github.com/jkcclemens/lodestone_parser#c452b1f49d8b017f3a8627aeb9f26d0d5a5abfbf"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "cssparser 0.23.10 (registry+https://github.com/rust-lang/crates.io-index)",

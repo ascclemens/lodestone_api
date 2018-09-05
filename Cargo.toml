@@ -11,9 +11,12 @@ edition = "2018"
 rocket = "0.3"
 rocket_codegen = "0.3"
 rocket_contrib = "0.3"
-failure = "0.1"
 serde = "1"
 serde_derive = "1"
+
+[dependencies.ffxiv_types]
+version = "1"
+default-features = false
 
 [dependencies.lodestone_scraper]
 git = "https://github.com/jkcclemens/lodestone_scraper"
