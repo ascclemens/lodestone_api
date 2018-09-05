@@ -40,6 +40,10 @@ fn character_search(data: CharacterSearchData) -> Json<RouteResult<Paginated<Cha
   Json(SCRAPER.with(|s| {
     let mut cs = s.character_search();
 
+    if let Some(page) = data.page {
+      cs.page(page);
+    }
+
     if let Some(ref name) = data.name {
       cs.name(name);
     }
@@ -80,6 +84,7 @@ fn character_search(data: CharacterSearchData) -> Json<RouteResult<Paginated<Cha
 
 #[derive(Debug, FromForm)]
 struct CharacterSearchData {
+  page: Option<u64>,
   name: Option<String>,
   world: Option<String>,
   data_center: Option<String>,
@@ -97,6 +102,10 @@ fn character(id: u64) -> Json<RouteResult<Character>> {
 fn free_company_search(data: FreeCompanySearchData) -> Json<RouteResult<Paginated<FreeCompanySearchItem>>> {
   Json(SCRAPER.with(|s| {
     let mut fcs = s.free_company_search();
+
+    if let Some(page) = data.page {
+      fcs.page(page);
+    }
 
     if let Some(ref name) = data.name {
       fcs.name(name);
@@ -126,6 +135,7 @@ fn free_company_search(data: FreeCompanySearchData) -> Json<RouteResult<Paginate
 
 #[derive(Debug, FromForm)]
 struct FreeCompanySearchData {
+  page: Option<u64>,
   name: Option<String>,
   world: Option<String>,
   data_center: Option<String>,
