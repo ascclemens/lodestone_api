@@ -1,3 +1,5 @@
+use lodestone_parser::error::Error as ParserError;
+
 use lodestone_scraper::error::Error;
 
 use std::fmt::Display;
@@ -27,7 +29,7 @@ impl<T> From<Result<T, Error>> for RouteResult<T> {
       Ok(result) => RouteResult::Success { result },
       Err(error @ Error::NotFound) => RouteResult::error(error),
       Err(error @ Error::UnexpectedResponse(_)) => RouteResult::error(error),
-      Err(Error::Parse(lodestone_parser::error::Error::InvalidPage(page))) => RouteResult::error(format!(
+      Err(Error::Parse(ParserError::InvalidPage(page))) => RouteResult::error(format!(
         "invalid page (1 through {} available)",
         page,
       )),
