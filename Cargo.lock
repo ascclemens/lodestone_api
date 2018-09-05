@@ -546,7 +546,7 @@ dependencies = [
 [[package]]
 name = "lodestone_scraper"
 version = "0.1.0"
-source = "git+https://github.com/jkcclemens/lodestone_scraper#4290ca9a6833fc617a801d072b46d0f76a02fad3"
+source = "git+https://github.com/jkcclemens/lodestone_scraper#b8141458c74fb7fb1a988fcc4f8a4f9bc780951f"
 dependencies = [
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ffxiv_types 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
