@@ -10,3 +10,14 @@ edition = "2018"
 [dependencies]
 rocket = "0.3"
 rocket_codegen = "0.3"
+rocket_contrib = "0.3"
+failure = "0.1"
+serde = "1"
+serde_derive = "1"
+
+[dependencies.lodestone_scraper]
+git = "https://github.com/jkcclemens/lodestone_scraper"
+
+[dependencies.lodestone_parser]
+git = "https://github.com/jkcclemens/lodestone_parser"
+default-features = false
