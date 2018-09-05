@@ -528,7 +528,7 @@ dependencies = [
 [[package]]
 name = "lodestone_parser"
 version = "0.1.0"
-source = "git+https://github.com/jkcclemens/lodestone_parser#1c40f448ac8059f081824936c43da02c432717f7"
+source = "git+https://github.com/jkcclemens/lodestone_parser#111f0261b6e1bf869eaf91f03d44693e91231dba"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "cssparser 0.23.10 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -95,6 +95,13 @@ struct CharacterSearchData {
 
 #[get("/character/<id>")]
 fn character(id: u64) -> Json<RouteResult<Character>> {
+  // let rr = match SCRAPER.with(|s| s.character(id)) {
+  //   Ok(result) => RouteResult::Success { result },
+  //   Err(error @ Error::NotFound) => RouteResult::error(error),
+  //   Err(error @ Error::UnexpectedResponse(_)) => RouteResult::error(error),
+  //   Err(_) => RouteResult::error("an error occurred"),
+  // };
+  // Json(rr)
   Json(SCRAPER.with(|s| s.character(id)).into())
 }
 

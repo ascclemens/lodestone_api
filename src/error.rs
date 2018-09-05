@@ -1,3 +1,5 @@
+use lodestone_scraper::error::Error;
+
 use std::fmt::Display;
 
 #[derive(Debug, Serialize)]
@@ -19,13 +21,17 @@ impl<T> RouteResult<T> {
   }
 }
 
-impl<T, D> From<Result<T, D>> for RouteResult<T>
-  where D: Display,
-{
-  fn from(res: Result<T, D>) -> Self {
+impl<T> From<Result<T, Error>> for RouteResult<T> {
+  fn from(res: Result<T, Error>) -> Self {
     match res {
       Ok(result) => RouteResult::Success { result },
-      Err(error) => RouteResult::error(error),
+      Err(error @ Error::NotFound) => RouteResult::error(error),
+      Err(error @ Error::UnexpectedResponse(_)) => RouteResult::error(error),
+      Err(Error::Parse(lodestone_parser::error::Error::InvalidPage(page))) => RouteResult::error(format!(
+        "invalid page (1 through {} available)",
+        page,
+      )),
+      Err(_) => RouteResult::error("an internal error occurred. did the Lodestone change?"),
     }
   }
 }
