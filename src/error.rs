@@ -40,7 +40,10 @@ impl<T> From<Result<T, Error>> for RouteResult<T> {
         "invalid page (1 through {} available)",
         page,
       )),
-      Err(_) => RouteResult::error("an internal error occurred. did the lodestone change?"),
+      Err(e) => {
+        eprintln!("error: {:#?}", e);
+        RouteResult::error("an internal error occurred. did the lodestone change?")
+      },
     }
   }
 }
