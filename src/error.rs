@@ -34,7 +34,7 @@ impl<T> From<Result<T, Error>> for RouteResult<T> {
   fn from(res: Result<T, Error>) -> Self {
     match res {
       Ok(result) => RouteResult::Scraped { result },
-      Err(error @ Error::NotFound) => RouteResult::NotFound,
+      Err(Error::NotFound) => RouteResult::NotFound,
       Err(error @ Error::UnexpectedResponse(_)) => RouteResult::error(error),
       Err(Error::Parse(ParserError::InvalidPage(page))) => RouteResult::error(format!(
         "invalid page (1 through {} available)",
