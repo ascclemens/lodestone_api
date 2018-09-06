@@ -18,17 +18,45 @@ use lodestone_parser::models::{
   },
 };
 
+use r2d2::Pool;
+
+use r2d2_redis::RedisConnectionManager;
+
+use redis::Commands;
+
 use rocket_contrib::Json;
 
-use std::str::FromStr;
+use serde::{de::DeserializeOwned, Serialize};
+
+use std::{
+  collections::hash_map::DefaultHasher,
+  hash::{Hash, Hasher},
+  str::FromStr,
+};
 
 mod error;
 
 use crate::error::*;
 
-thread_local!(
-  static SCRAPER: LodestoneScraper = LodestoneScraper::default();
-);
+pub type Result<T> = std::result::Result<T, failure::Error>;
+
+fn find_redis<T>(redis: &Redis, key: &str) -> Result<Option<T>>
+  where T: DeserializeOwned,
+{
+  let json: Option<String> = redis.get(key)?;
+  match json {
+    Some(x) => Ok(serde_json::from_str(&x)?),
+    None => return Ok(None),
+  }
+}
+
+fn put_redis<T>(redis: &Redis, key: &str, val: T) -> Result<()>
+  where T: Serialize,
+{
+  let json = serde_json::to_string(&val)?;
+  redis.set_ex(key, json, 3600)?;
+  Ok(())
+}
 
 #[get("/")]
 fn index() -> &'static str {
@@ -36,9 +64,13 @@ fn index() -> &'static str {
 }
 
 #[get("/character/search?<data>")]
-fn character_search(data: CharacterSearchData) -> Json<RouteResult<Paginated<CharacterSearchItem>>> {
-  Json(SCRAPER.with(|s| {
-    let mut cs = s.character_search();
+fn character_search(data: CharacterSearchData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<CharacterSearchItem>>>> {
+  let search_key = format!("character_search_{}", data.as_hash());
+  if let Some(result) = find_redis(&redis, &search_key)? {
+    return Ok(Json(RouteResult::Success { result }));
+  }
+  let res = {
+    let mut cs = scraper.character_search();
 
     if let Some(page) = data.page {
       cs.page(page);
@@ -79,10 +111,16 @@ fn character_search(data: CharacterSearchData) -> Json<RouteResult<Paginated<Cha
     }
 
     cs.send()
-  }).into())
+  }.into();
+
+  if let RouteResult::Success { ref result } = res {
+    put_redis(&redis, &search_key, result)?;
+  }
+
+  Ok(Json(res))
 }
 
-#[derive(Debug, FromForm)]
+#[derive(Debug, FromForm, Hash)]
 struct CharacterSearchData {
   page: Option<u64>,
   name: Option<String>,
@@ -93,22 +131,35 @@ struct CharacterSearchData {
   grand_company: Option<String>,
 }
 
+impl CharacterSearchData {
+  fn as_hash(&self) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    self.hash(&mut hasher);
+    hasher.finish()
+  }
+}
+
 #[get("/character/<id>")]
-fn character(id: u64) -> Json<RouteResult<Character>> {
-  // let rr = match SCRAPER.with(|s| s.character(id)) {
-  //   Ok(result) => RouteResult::Success { result },
-  //   Err(error @ Error::NotFound) => RouteResult::error(error),
-  //   Err(error @ Error::UnexpectedResponse(_)) => RouteResult::error(error),
-  //   Err(_) => RouteResult::error("an error occurred"),
-  // };
-  // Json(rr)
-  Json(SCRAPER.with(|s| s.character(id)).into())
+fn character(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Character>>> {
+  let key = &format!("character_{}", id);
+  if let Some(result) = find_redis(&redis, &key)? {
+    return Ok(Json(RouteResult::Success { result }));
+  }
+  let res = scraper.character(id).into();
+  if let RouteResult::Success { ref result } = res {
+    put_redis(&redis, &key, result)?;
+  }
+  Ok(Json(res))
 }
 
 #[get("/free_company/search?<data>")]
-fn free_company_search(data: FreeCompanySearchData) -> Json<RouteResult<Paginated<FreeCompanySearchItem>>> {
-  Json(SCRAPER.with(|s| {
-    let mut fcs = s.free_company_search();
+fn free_company_search(data: FreeCompanySearchData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<FreeCompanySearchItem>>>> {
+  let key = format!("free_company_search_{}", data.as_hash());
+  if let Some(result) = find_redis(&redis, &key)? {
+    return Ok(Json(RouteResult::Success { result }));
+  }
+  let res = {
+    let mut fcs = scraper.free_company_search();
 
     if let Some(page) = data.page {
       fcs.page(page);
@@ -137,10 +188,16 @@ fn free_company_search(data: FreeCompanySearchData) -> Json<RouteResult<Paginate
     }
 
     fcs.send()
-  }).into())
+  }.into();
+
+  if let RouteResult::Success { ref result } = res {
+    put_redis(&redis, &key, result)?;
+  }
+
+  Ok(Json(res))
 }
 
-#[derive(Debug, FromForm)]
+#[derive(Debug, FromForm, Hash)]
 struct FreeCompanySearchData {
   page: Option<u64>,
   name: Option<String>,
@@ -149,13 +206,31 @@ struct FreeCompanySearchData {
   grand_company: Option<String>,
 }
 
+impl FreeCompanySearchData {
+  fn as_hash(&self) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    self.hash(&mut hasher);
+    hasher.finish()
+  }
+}
+
 #[get("/free_company/<id>")]
-fn free_company(id: u64) -> Json<RouteResult<FreeCompany>> {
-  Json(SCRAPER.with(|s| s.free_company(id)).into())
+fn free_company(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<FreeCompany>>> {
+  let key = format!("free_company_{}", id);
+  if let Some(result) = find_redis(&redis, &key)? {
+    return Ok(Json(RouteResult::Success { result }));
+  }
+  let res = scraper.free_company(id).into();
+  if let RouteResult::Success { ref result } = res {
+    put_redis(&redis, &key, result)?;
+  }
+  Ok(Json(res))
 }
 
 fn main() {
   rocket::ignite()
+    .manage(redis_pool())
+    .manage(LodestoneScraper::default())
     .mount("/", routes![
       index,
       character,
@@ -164,4 +239,38 @@ fn main() {
       free_company_search,
     ])
     .launch();
+}
+
+fn redis_pool() -> Pool<RedisConnectionManager> {
+  Pool::builder()
+    .build(RedisConnectionManager::new(std::env::var("REDIS_URL").unwrap().as_str()).unwrap())
+    .unwrap()
+}
+
+use std::ops::Deref;
+use rocket::http::Status;
+use rocket::request::{self, FromRequest};
+use rocket::{Request, State, Outcome};
+use r2d2::{PooledConnection};
+
+pub struct Redis(pub PooledConnection<RedisConnectionManager>);
+
+impl<'a, 'r> FromRequest<'a, 'r> for Redis {
+  type Error = ();
+
+  fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+    let pool = request.guard::<State<Pool<RedisConnectionManager>>>()?;
+    match pool.get() {
+      Ok(conn) => Outcome::Success(Redis(conn)),
+      Err(_) => Outcome::Failure((Status::ServiceUnavailable, ()))
+    }
+  }
+}
+
+impl Deref for Redis {
+  type Target = PooledConnection<RedisConnectionManager>;
+
+  fn deref(&self) -> &Self::Target {
+      &self.0
+  }
 }

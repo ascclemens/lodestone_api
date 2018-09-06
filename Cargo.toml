@@ -13,6 +13,11 @@ rocket_codegen = "0.3"
 rocket_contrib = "0.3"
 serde = "1"
 serde_derive = "1"
+serde_json = "1"
+redis = "0.9"
+r2d2 = "0.8"
+r2d2_redis = "0.8"
+failure = "0.1"
 
 [dependencies.ffxiv_types]
 version = "1"
