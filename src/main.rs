@@ -18,11 +18,17 @@ use lodestone_parser::models::{
   },
 };
 
-use r2d2::Pool;
+use r2d2::{Pool, PooledConnection};
 
 use r2d2_redis::RedisConnectionManager;
 
 use redis::Commands;
+
+use rocket::{
+  Request, State, Outcome,
+  http::Status,
+  request::{self, FromRequest},
+};
 
 use rocket_contrib::Json;
 
@@ -31,6 +37,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::{
   collections::hash_map::DefaultHasher,
   hash::{Hash, Hasher},
+  ops::Deref,
   str::FromStr,
 };
 
@@ -40,10 +47,25 @@ use crate::error::*;
 
 pub type Result<T> = std::result::Result<T, failure::Error>;
 
+macro_rules! cached {
+  ($redis:expr, $key:expr => $bl:block) => {{
+    if let Some(result) = find_redis(&$redis, $key.as_str())? {
+      return Ok(Json(RouteResult::Success { result }));
+    }
+    let res = $bl;
+    if let RouteResult::Success { ref result } = res {
+      put_redis(&$redis, $key.as_str(), result)?;
+    }
+    Ok(Json(res))
+  }}
+}
+
 fn find_redis<T>(redis: &Redis, key: &str) -> Result<Option<T>>
   where T: DeserializeOwned,
 {
   let json: Option<String> = redis.get(key)?;
+  // requires newer redis-rs
+  // let ttl = redis.ttl(key)?;
   match json {
     Some(x) => Ok(serde_json::from_str(&x)?),
     None => return Ok(None),
@@ -66,10 +88,7 @@ fn index() -> &'static str {
 #[get("/character/search?<data>")]
 fn character_search(data: CharacterSearchData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<CharacterSearchItem>>>> {
   let search_key = format!("character_search_{}", data.as_hash());
-  if let Some(result) = find_redis(&redis, &search_key)? {
-    return Ok(Json(RouteResult::Success { result }));
-  }
-  let res = {
+  cached!(redis, search_key => {
     let mut cs = scraper.character_search();
 
     if let Some(page) = data.page {
@@ -110,14 +129,8 @@ fn character_search(data: CharacterSearchData, scraper: State<LodestoneScraper>,
       }
     }
 
-    cs.send()
-  }.into();
-
-  if let RouteResult::Success { ref result } = res {
-    put_redis(&redis, &search_key, result)?;
-  }
-
-  Ok(Json(res))
+    cs.send().into()
+  })
 }
 
 #[derive(Debug, FromForm, Hash)]
@@ -142,23 +155,15 @@ impl CharacterSearchData {
 #[get("/character/<id>")]
 fn character(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Character>>> {
   let key = &format!("character_{}", id);
-  if let Some(result) = find_redis(&redis, &key)? {
-    return Ok(Json(RouteResult::Success { result }));
-  }
-  let res = scraper.character(id).into();
-  if let RouteResult::Success { ref result } = res {
-    put_redis(&redis, &key, result)?;
-  }
-  Ok(Json(res))
+  cached!(redis, key => {
+    scraper.character(id).into()
+  })
 }
 
 #[get("/free_company/search?<data>")]
 fn free_company_search(data: FreeCompanySearchData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<FreeCompanySearchItem>>>> {
   let key = format!("free_company_search_{}", data.as_hash());
-  if let Some(result) = find_redis(&redis, &key)? {
-    return Ok(Json(RouteResult::Success { result }));
-  }
-  let res = {
+  cached!(redis, key => {
     let mut fcs = scraper.free_company_search();
 
     if let Some(page) = data.page {
@@ -187,14 +192,8 @@ fn free_company_search(data: FreeCompanySearchData, scraper: State<LodestoneScra
       }
     }
 
-    fcs.send()
-  }.into();
-
-  if let RouteResult::Success { ref result } = res {
-    put_redis(&redis, &key, result)?;
-  }
-
-  Ok(Json(res))
+    fcs.send().into()
+  })
 }
 
 #[derive(Debug, FromForm, Hash)]
@@ -217,14 +216,9 @@ impl FreeCompanySearchData {
 #[get("/free_company/<id>")]
 fn free_company(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<FreeCompany>>> {
   let key = format!("free_company_{}", id);
-  if let Some(result) = find_redis(&redis, &key)? {
-    return Ok(Json(RouteResult::Success { result }));
-  }
-  let res = scraper.free_company(id).into();
-  if let RouteResult::Success { ref result } = res {
-    put_redis(&redis, &key, result)?;
-  }
-  Ok(Json(res))
+  cached!(redis, key => {
+    scraper.free_company(id).into()
+  })
 }
 
 fn main() {
@@ -242,16 +236,14 @@ fn main() {
 }
 
 fn redis_pool() -> Pool<RedisConnectionManager> {
+  let url = std::env::var("REDIS_URL")
+    .expect("missing REDIS_URL environment variable");
+  let cm = RedisConnectionManager::new(url.as_str())
+    .expect("could not build redis connection manager");
   Pool::builder()
-    .build(RedisConnectionManager::new(std::env::var("REDIS_URL").unwrap().as_str()).unwrap())
-    .unwrap()
+    .build(cm)
+    .expect("could not build redis pool")
 }
-
-use std::ops::Deref;
-use rocket::http::Status;
-use rocket::request::{self, FromRequest};
-use rocket::{Request, State, Outcome};
-use r2d2::{PooledConnection};
 
 pub struct Redis(pub PooledConnection<RedisConnectionManager>);
 
