@@ -3,6 +3,8 @@
 
 #[macro_use] extern crate serde_derive;
 
+use chrono::{DateTime, Duration, TimeZone, Utc};
+
 use ffxiv_types::{DataCenter, World, Race, Clan};
 
 use lodestone_scraper::LodestoneScraper;
@@ -49,25 +51,31 @@ pub type Result<T> = std::result::Result<T, failure::Error>;
 
 macro_rules! cached {
   ($redis:expr, $key:expr => $bl:block) => {{
-    if let Some(result) = find_redis(&$redis, $key.as_str())? {
-      return Ok(Json(RouteResult::Success { result }));
+    if let Some((result, expires)) = find_redis(&$redis, $key.as_str())? {
+      return Ok(Json(RouteResult::Cached { result, expires }));
     }
     let res = $bl;
-    if let RouteResult::Success { ref result } = res {
-      put_redis(&$redis, $key.as_str(), result)?;
+    if let RouteResult::Scraped { result } = res {
+      put_redis(&$redis, $key.as_str(), &result)?;
+      let expires = Utc.timestamp((Utc::now() + Duration::seconds(3600)).timestamp(), 0);
+      return Ok(Json(RouteResult::Cached { result, expires }));
     }
     Ok(Json(res))
   }}
 }
 
-fn find_redis<T>(redis: &Redis, key: &str) -> Result<Option<T>>
+fn find_redis<T>(redis: &Redis, key: &str) -> Result<Option<(T, DateTime<Utc>)>>
   where T: DeserializeOwned,
 {
   let json: Option<String> = redis.get(key)?;
-  // requires newer redis-rs
-  // let ttl = redis.ttl(key)?;
   match json {
-    Some(x) => Ok(serde_json::from_str(&x)?),
+    Some(x) => {
+      let json = serde_json::from_str(&x)?;
+      let expires_in: i64 = redis::cmd("PTTL").arg(key).query(&***redis)?;
+      // we only want second resolution
+      let expires = Utc.timestamp((Utc::now() + Duration::milliseconds(expires_in)).timestamp(), 0);
+      Ok(Some((json, expires)))
+    },
     None => return Ok(None),
   }
 }

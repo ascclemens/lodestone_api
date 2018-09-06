@@ -542,6 +542,7 @@ dependencies = [
 name = "lodestone_api"
 version = "0.1.0"
 dependencies = [
+ "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ffxiv_types 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lodestone_parser 0.1.0 (git+https://github.com/jkcclemens/lodestone_parser)",
