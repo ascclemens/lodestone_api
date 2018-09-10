@@ -13,6 +13,7 @@ crate type Result<T> = std::result::Result<T, failure::Error>;
 crate enum RouteResult<T> {
   Success {
     result: T,
+    last_update: DateTime<Utc>,
   },
   Adding {
     queue_position: u64,

@@ -4,6 +4,8 @@ use crate::{
   redis::Redis,
 };
 
+use chrono::{DateTime, Utc};
+
 use lodestone_parser::models::character::Character;
 
 use redis::Commands;
@@ -28,7 +30,10 @@ crate fn get(id: u64, conn: DbConn, redis: Redis) -> Result<Json<RouteResult<Cha
       .set(characters::frecency.eq(new_frecency))
       .filter(characters::id.eq(dbc.id))
       .execute(&*conn)?;
-    return Ok(Json(RouteResult::Success { result: c }));
+    return Ok(Json(RouteResult::Success {
+      result: c,
+      last_update: DateTime::from_utc(dbc.last_update, Utc),
+    }));
   }
   if let Ok(Some((rr, _))) = crate::find_redis(&redis, &format!("character_{}", id)) {
     return Ok(Json(rr));
