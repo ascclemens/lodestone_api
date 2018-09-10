@@ -8,28 +8,33 @@ authors = ["Kyle Clemens <git@kyleclemens.com>"]
 edition = "2018"
 
 [dependencies]
+byteorder = "1"
+failure = "0.1"
+r2d2 = "0.8"
+r2d2_redis = "0.8"
+redis = "0.9"
 rocket = "0.3"
 rocket_codegen = "0.3"
 rocket_contrib = "0.3"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
-redis = "0.9"
-r2d2 = "0.8"
-r2d2_redis = "0.8"
-failure = "0.1"
+
+[dependencies.chrono]
+version = "0.4"
+features = ["serde"]
+
+[dependencies.diesel]
+version = "1"
+features = ["postgres", "r2d2", "serde_json", "chrono"]
 
 [dependencies.ffxiv_types]
 version = "1"
 default-features = false
 
-[dependencies.lodestone_scraper]
-git = "https://github.com/jkcclemens/lodestone_scraper"
-
 [dependencies.lodestone_parser]
 git = "https://github.com/jkcclemens/lodestone_parser"
 default-features = false
 
-[dependencies.chrono]
-version = "0.4"
-features = ["serde"]
+[dependencies.lodestone_scraper]
+git = "https://github.com/jkcclemens/lodestone_scraper"

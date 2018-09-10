@@ -6,9 +6,17 @@ use lodestone_scraper::error::Error;
 
 use std::fmt::Display;
 
-#[derive(Debug, Serialize)]
+crate type Result<T> = std::result::Result<T, failure::Error>;
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "status")]
-pub enum RouteResult<T> {
+crate enum RouteResult<T> {
+  Success {
+    result: T,
+  },
+  Adding {
+    queue_position: u64,
+  },
   Scraped {
     result: T,
   },
@@ -30,8 +38,8 @@ impl<T> RouteResult<T> {
   }
 }
 
-impl<T> From<Result<T, Error>> for RouteResult<T> {
-  fn from(res: Result<T, Error>) -> Self {
+impl<T> From<std::result::Result<T, Error>> for RouteResult<T> {
+  fn from(res: std::result::Result<T, Error>) -> Self {
     match res {
       Ok(result) => RouteResult::Scraped { result },
       Err(Error::NotFound) => RouteResult::NotFound,
