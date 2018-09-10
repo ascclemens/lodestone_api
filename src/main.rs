@@ -1,4 +1,4 @@
-#![feature(plugin, decl_macro, custom_derive, in_band_lifetimes)]
+#![feature(plugin, decl_macro, custom_derive, in_band_lifetimes, crate_visibility_modifier)]
 #![plugin(rocket_codegen)]
 #![allow(proc_macro_derive_resolution_fallback)]
 
