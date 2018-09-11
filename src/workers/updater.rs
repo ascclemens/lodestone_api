@@ -24,6 +24,17 @@ crate fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
   std::thread::spawn(move || {
     let scraper = LodestoneScraper::default();
 
+    let prevent_underflow = |conn: &PooledConnection<ConnectionManager<PgConnection>>| -> Result<()> {
+      let u_sql = format!("ln(0.5) + (extract(epoch from now()) * {:?})", crate::frecency::DECAY);
+      let s_sql = format!("exp(frecency - (extract(epoch from now()) * {:?}))", crate::frecency::DECAY);
+      diesel::update(characters::table)
+        .set(characters::frecency.eq(diesel::dsl::sql::<diesel::sql_types::Float8>(&u_sql)))
+        .filter(characters::frecency.eq(0.0)
+          .or(diesel::dsl::sql::<diesel::sql_types::Float8>(&s_sql).lt(0.000001)))
+        .execute(&**conn)?;
+      Ok(())
+    };
+
     let update_character = |conn: &PooledConnection<ConnectionManager<PgConnection>>, c: &DatabaseCharacter| -> Result<()> {
       let scraped = scraper.character(*c.id)?;
       let val = serde_json::to_value(&scraped)?;
@@ -40,6 +51,7 @@ crate fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
 
     let inner = || -> Result<()> {
       let conn = db_pool.get()?;
+      prevent_underflow(&conn)?;
       let sql = format!("exp(frecency - (extract(epoch from now()) * {:?}))", crate::frecency::DECAY);
       let twelve_hours_ago = (Utc::now() - Duration::hours(12)).naive_utc();
       let chars: Vec<DatabaseCharacter> = characters::table
