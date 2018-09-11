@@ -2,6 +2,7 @@ use crate::{
   cached,
   error::*,
   redis::Redis,
+  routes::RouteResult,
 };
 
 use lodestone_parser::models::free_company::FreeCompany;

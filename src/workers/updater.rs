@@ -18,7 +18,7 @@ use lodestone_scraper::LodestoneScraper;
 
 use r2d2::{Pool, PooledConnection};
 
-crate fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
+pub fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
   let db_pool = db_pool.clone();
 
   std::thread::spawn(move || {

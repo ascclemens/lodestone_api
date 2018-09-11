@@ -10,7 +10,7 @@ use rocket::{
 
 use std::ops::Deref;
 
-crate fn pool() -> Pool<RedisConnectionManager> {
+pub fn pool() -> Pool<RedisConnectionManager> {
   let url = std::env::var("REDIS_URL")
     .expect("missing REDIS_URL environment variable");
   let cm = RedisConnectionManager::new(url.as_str())

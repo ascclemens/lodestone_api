@@ -1,7 +1,7 @@
-crate mod queue;
-crate mod updater;
+pub mod queue;
+pub mod updater;
 
-crate use self::{
+pub use self::{
   queue::queue,
   updater::updater,
 };

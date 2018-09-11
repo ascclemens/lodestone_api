@@ -2,6 +2,7 @@ use crate::{
   cached,
   error::*,
   redis::Redis,
+  routes::RouteResult,
 };
 
 use ffxiv_types::{DataCenter, World, Race, Clan};

@@ -1,6 +1,7 @@
 use crate::{
   error::*,
   redis::Redis,
+  routes::RouteResult,
 };
 
 use ffxiv_types::{DataCenter, World};

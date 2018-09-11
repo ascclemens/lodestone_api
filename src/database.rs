@@ -18,7 +18,7 @@ crate mod schema;
 
 crate type PostgresPool = Pool<ConnectionManager<PgConnection>>;
 
-crate fn pool() -> PostgresPool {
+pub fn pool() -> PostgresPool {
   let database_url = env::var("DATABASE_URL").expect("missing DATABASE_URL env var");
   let manager = ConnectionManager::<PgConnection>::new(database_url.as_str());
   Pool::new(manager).expect("db pool")

@@ -4,6 +4,7 @@ use crate::{
     schema::characters,
   },
   error::*,
+  routes::RouteResult,
 };
 
 use chrono::{Duration, Utc};
@@ -22,7 +23,7 @@ use r2d2_redis::RedisConnectionManager;
 
 use redis::Commands;
 
-crate fn queue(
+pub fn queue(
   redis_pool: &Pool<RedisConnectionManager>,
   db_pool: &Pool<ConnectionManager<PgConnection>>,
 ) {
