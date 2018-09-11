@@ -9,7 +9,7 @@ use chrono::{DateTime, Duration, TimeZone, Utc};
 
 use lodestone_scraper::LodestoneScraper;
 
-use redis::Commands;
+use ::redis::Commands;
 
 use serde::{de::DeserializeOwned, Serialize};
 
