@@ -25,7 +25,7 @@ crate fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
     let scraper = LodestoneScraper::default();
 
     let prevent_underflow = |conn: &PooledConnection<ConnectionManager<PgConnection>>| -> Result<()> {
-      let u_sql = format!("ln(0.5) + (extract(epoch from now()) * {:?})", crate::frecency::DECAY);
+      let u_sql = format!("ln(0.001) + (extract(epoch from now()) * {:?})", crate::frecency::DECAY);
       let s_sql = format!("exp(frecency - (extract(epoch from now()) * {:?}))", crate::frecency::DECAY);
       diesel::update(characters::table)
         .set(characters::frecency.eq(diesel::dsl::sql::<diesel::sql_types::Float8>(&u_sql)))
