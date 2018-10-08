@@ -1,6 +1,6 @@
 use chrono::Utc;
 
-const LN_2: f64 = 0.6931471805599453;
+const LN_2: f64 = std::f64::consts::LN_2;
 const HALF_LIFE: f64 = 1.5 * 24.0 * 60.0 * 60.0;
 crate const DECAY: f64 = LN_2 / HALF_LIFE;
 
