@@ -1,0 +1,53 @@
+use crate::{
+  cached,
+  error::*,
+  redis::Redis,
+  routes::RouteResult,
+};
+
+use lodestone_parser::models::linkshell::Linkshell;
+
+use lodestone_scraper::LodestoneScraper;
+
+use rocket::State;
+
+use rocket_contrib::Json;
+
+use std::{
+  collections::hash_map::DefaultHasher,
+  hash::{Hash, Hasher},
+};
+
+#[get("/linkshell/<id>")]
+crate fn get(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Linkshell>>> {
+  _get(id, LinkshellData { page: 1 }, scraper, redis)
+}
+
+#[get("/linkshell/<id>?<data>")]
+crate fn get_page(id: u64, data: LinkshellData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Linkshell>>> {
+  _get(id, data, scraper, redis)
+}
+
+#[derive(Debug, FromForm, Hash)]
+crate struct LinkshellData {
+  page: u64,
+}
+
+impl LinkshellData {
+  fn as_hash(&self) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    self.hash(&mut hasher);
+    hasher.finish()
+  }
+}
+
+crate fn _get(id: u64, data: LinkshellData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Linkshell>>> {
+  let key = format!("linkshell_{}_{}", id, data.as_hash());
+  cached!(redis, key => {
+    scraper
+      .linkshell(id)
+      .page(data.page)
+      .send()
+      .into()
+  })
+}

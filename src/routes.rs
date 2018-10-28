@@ -8,6 +8,7 @@ use std::fmt::Display;
 
 pub mod character;
 pub mod free_company;
+pub mod linkshell;
 
 pub mod search;
 
@@ -57,6 +58,24 @@ impl<T> RouteResult<T> {
   pub fn error<D: Display>(error: D) -> Self {
     RouteResult::Error {
       error: error.to_string(),
+    }
+  }
+
+  pub fn result(&self) -> Option<&T> {
+    match *self {
+      RouteResult::Success { ref result, .. }
+      | RouteResult::Scraped { ref result }
+      | RouteResult::Cached { ref result, .. } => Some(result),
+      _ => None,
+    }
+  }
+
+  pub fn into_result(self) -> Option<T> {
+    match self {
+      RouteResult::Success { result, .. }
+      | RouteResult::Scraped { result }
+      | RouteResult::Cached { result, .. } => Some(result),
+      _ => None,
     }
   }
 }

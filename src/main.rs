@@ -20,6 +20,9 @@ fn main() {
       lodestone_api::routes::search::character::get,
       lodestone_api::routes::free_company::get,
       lodestone_api::routes::search::free_company::get,
+      lodestone_api::routes::linkshell::get,
+      lodestone_api::routes::linkshell::get_page,
+      lodestone_api::routes::search::linkshell::get,
     ])
     .launch();
 }
