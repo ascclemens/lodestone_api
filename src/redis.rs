@@ -20,7 +20,7 @@ pub fn pool() -> Pool<RedisConnectionManager> {
     .expect("could not build redis pool")
 }
 
-crate struct Redis(crate PooledConnection<RedisConnectionManager>);
+pub struct Redis(crate PooledConnection<RedisConnectionManager>);
 
 impl<'a, 'r> FromRequest<'a, 'r> for Redis {
   type Error = ();

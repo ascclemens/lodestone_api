@@ -17,10 +17,10 @@ use lodestone_parser::models::character::Character;
 
 use redis::Commands;
 
-use rocket_contrib::Json;
+use rocket_contrib::json::Json;
 
 #[get("/character/<id>")]
-crate fn get(id: u64, conn: DbConn, redis: Redis) -> Result<Json<RouteResult<Character>>> {
+pub fn get(id: u64, conn: DbConn, redis: Redis) -> Result<Json<RouteResult<Character>>> {
   // get character stored in database
   let db_char: Option<DatabaseCharacter> = characters::table
     .find(U64(id))

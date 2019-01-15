@@ -13,7 +13,7 @@ pub mod linkshell;
 pub mod search;
 
 #[get("/")]
-crate fn index() -> &'static str {
+pub fn index() -> &'static str {
   "Hello, world!"
 }
 

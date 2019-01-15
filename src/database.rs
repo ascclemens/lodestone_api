@@ -24,7 +24,7 @@ pub fn pool() -> PostgresPool {
   Pool::new(manager).expect("db pool")
 }
 
-crate struct DbConn(crate PooledConnection<ConnectionManager<PgConnection>>);
+pub struct DbConn(crate PooledConnection<ConnectionManager<PgConnection>>);
 
 impl FromRequest<'a, 'r> for DbConn {
   type Error = ();

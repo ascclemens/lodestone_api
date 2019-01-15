@@ -13,9 +13,9 @@ use lodestone_parser::models::search::{
   linkshell::LinkshellSearchItem,
 };
 
-use rocket::State;
+use rocket::{State, request::Form};
 
-use rocket_contrib::Json;
+use rocket_contrib::json::Json;
 
 use std::{
   collections::hash_map::DefaultHasher,
@@ -25,8 +25,9 @@ use std::{
 
 use crate::cached;
 
-#[get("/linkshell/search?<data>")]
-crate fn get(data: LinkshellSearchData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<LinkshellSearchItem>>>> {
+#[get("/linkshell/search?<data..>")]
+pub fn get(data: Form<LinkshellSearchData>, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<LinkshellSearchItem>>>> {
+  let data = data.into_inner();
   let key = format!("linkshell_search_{}", data.as_hash());
   cached!(redis, key => {
     let mut fcs = scraper.linkshell_search();
@@ -56,7 +57,7 @@ crate fn get(data: LinkshellSearchData, scraper: State<LodestoneScraper>, redis:
 }
 
 #[derive(Debug, FromForm, Hash)]
-crate struct LinkshellSearchData {
+pub struct LinkshellSearchData {
   page: Option<u64>,
   name: Option<String>,
   world: Option<String>,

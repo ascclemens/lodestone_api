@@ -9,9 +9,9 @@ use lodestone_parser::models::linkshell::Linkshell;
 
 use lodestone_scraper::LodestoneScraper;
 
-use rocket::State;
+use rocket::{State, request::Form};
 
-use rocket_contrib::Json;
+use rocket_contrib::json::Json;
 
 use std::{
   collections::hash_map::DefaultHasher,
@@ -19,17 +19,17 @@ use std::{
 };
 
 #[get("/linkshell/<id>")]
-crate fn get(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Linkshell>>> {
+pub fn get(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Linkshell>>> {
   _get(id, LinkshellData { page: 1 }, scraper, redis)
 }
 
-#[get("/linkshell/<id>?<data>")]
-crate fn get_page(id: u64, data: LinkshellData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Linkshell>>> {
-  _get(id, data, scraper, redis)
+#[get("/linkshell/<id>?<data..>")]
+pub fn get_page(id: u64, data: Form<LinkshellData>, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Linkshell>>> {
+  _get(id, data.into_inner(), scraper, redis)
 }
 
 #[derive(Debug, FromForm, Hash)]
-crate struct LinkshellData {
+pub struct LinkshellData {
   page: u64,
 }
 

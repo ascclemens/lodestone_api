@@ -17,9 +17,9 @@ use lodestone_parser::models::{
   },
 };
 
-use rocket::State;
+use rocket::{State, request::Form};
 
-use rocket_contrib::Json;
+use rocket_contrib::json::Json;
 
 use std::{
   collections::hash_map::DefaultHasher,
@@ -27,8 +27,9 @@ use std::{
   str::FromStr,
 };
 
-#[get("/character/search?<data>")]
-crate fn get(data: CharacterSearchData, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<CharacterSearchItem>>>> {
+#[get("/character/search?<data..>")]
+pub fn get(data: Form<CharacterSearchData>, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<CharacterSearchItem>>>> {
+  let data = data.into_inner();
   let search_key = format!("character_search_{}", data.as_hash());
   cached!(redis, search_key => {
     let mut cs = scraper.character_search();
@@ -76,7 +77,7 @@ crate fn get(data: CharacterSearchData, scraper: State<LodestoneScraper>, redis:
 }
 
 #[derive(Debug, FromForm, Hash)]
-crate struct CharacterSearchData {
+pub struct CharacterSearchData {
   page: Option<u64>,
   name: Option<String>,
   world: Option<String>,

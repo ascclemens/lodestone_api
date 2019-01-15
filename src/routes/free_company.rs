@@ -11,10 +11,10 @@ use lodestone_scraper::LodestoneScraper;
 
 use rocket::State;
 
-use rocket_contrib::Json;
+use rocket_contrib::json::Json;
 
 #[get("/free_company/<id>")]
-crate fn get(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<FreeCompany>>> {
+pub fn get(id: u64, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<FreeCompany>>> {
   let key = format!("free_company_{}", id);
   cached!(redis, key => {
     scraper.free_company(id).into()

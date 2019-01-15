@@ -1,9 +1,9 @@
-#![feature(plugin, decl_macro, custom_derive, in_band_lifetimes, crate_visibility_modifier)]
-#![plugin(rocket_codegen)]
+#![feature(decl_macro, proc_macro_hygiene, in_band_lifetimes, crate_visibility_modifier)]
 #![allow(proc_macro_derive_resolution_fallback)]
 
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate rocket;
 
 use chrono::{DateTime, Duration, TimeZone, Utc};
 
@@ -28,7 +28,7 @@ macro_rules! cached {
   ($redis:expr, $key:expr => $bl:block) => {{
     use crate::routes::RouteResult;
     use chrono::{Duration, TimeZone, Utc};
-    use rocket_contrib::Json;
+    use rocket_contrib::json::Json;
 
     if let Some((result, expires)) = crate::find_redis(&$redis, $key.as_str())? {
       return Ok(Json(RouteResult::Cached { result, expires }));
