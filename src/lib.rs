@@ -1,5 +1,5 @@
 #![feature(decl_macro, proc_macro_hygiene, in_band_lifetimes, crate_visibility_modifier)]
-#![allow(proc_macro_derive_resolution_fallback)]
+#![allow(proc_macro_derive_resolution_fallback, clippy::unreadable_literal)]
 
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate serde_derive;
@@ -55,7 +55,7 @@ crate fn find_redis<T>(redis: &Redis, key: &str) -> Result<Option<(T, DateTime<U
       let expires = Utc.timestamp((Utc::now() + Duration::milliseconds(expires_in)).timestamp(), 0);
       Ok(Some((json, expires)))
     },
-    None => return Ok(None),
+    None => Ok(None),
   }
 }
 
