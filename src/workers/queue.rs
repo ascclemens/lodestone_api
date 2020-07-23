@@ -19,9 +19,10 @@ use lodestone_scraper::LodestoneScraper;
 
 use r2d2::Pool;
 
-use r2d2_redis::RedisConnectionManager;
-
-use redis::Commands;
+use r2d2_redis::{
+  redis::Commands,
+  RedisConnectionManager,
+};
 
 pub fn queue(
   redis_pool: &Pool<RedisConnectionManager>,
@@ -29,16 +30,16 @@ pub fn queue(
 ) {
   let redis_pool = redis_pool.clone();
   let db_pool = db_pool.clone();
-  std::thread::spawn(move || {
+  tokio::task::spawn(async move {
     let scraper = LodestoneScraper::default();
 
-    let inner = move || -> Result<()> {
-      let redis = redis_pool.get()?;
+    async fn inner(redis_pool: &Pool<RedisConnectionManager>, db_pool: &Pool<ConnectionManager<PgConnection>>, scraper: &LodestoneScraper) -> Result<()> {
+      let mut redis = redis_pool.get()?;
       let conn = db_pool.get()?;
 
       let pop: Vec<String> = redis.blpop("character_queue", 0)?;
       let id: u64 = pop[1].parse()?;
-      let character = match scraper.character(id) {
+      let character = match scraper.character(id).await {
         Ok(c) => c,
         Err(lodestone_scraper::error::Error::NotFound) => {
           redis.set_ex(
@@ -68,7 +69,7 @@ pub fn queue(
       Ok(())
     };
     loop {
-      if let Err(e) = inner() {
+      if let Err(e) = inner(&redis_pool, &db_pool, &scraper).await {
         eprintln!("error in queue task: {}", e);
       }
       std::thread::sleep(Duration::seconds(5).to_std().unwrap());

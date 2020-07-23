@@ -17,6 +17,8 @@ use rocket::{State, request::Form};
 
 use rocket_contrib::json::Json;
 
+use tokio::runtime::Runtime;
+
 use std::{
   collections::hash_map::DefaultHasher,
   hash::{Hash, Hasher},
@@ -26,7 +28,7 @@ use std::{
 use crate::cached;
 
 #[get("/linkshell/search?<data..>")]
-pub fn get(data: Form<LinkshellSearchData>, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<LinkshellSearchItem>>>> {
+pub fn get(data: Form<LinkshellSearchData>, scraper: State<LodestoneScraper>, mut redis: Redis, runtime: State<Runtime>) -> Result<Json<RouteResult<Paginated<LinkshellSearchItem>>>> {
   let data = data.into_inner();
   let key = format!("linkshell_search_{}", data.as_hash());
   cached!(redis, key => {
@@ -52,7 +54,7 @@ pub fn get(data: Form<LinkshellSearchData>, scraper: State<LodestoneScraper>, re
       }
     }
 
-    fcs.send().into()
+    runtime.handle().block_on(fcs.send()).into()
   })
 }
 

@@ -35,7 +35,7 @@ impl Error for SqlError {
     "there was an sql error"
   }
 
-  fn cause(&self) -> Option<&Error> {
+  fn cause(&self) -> Option<&dyn Error> {
     None
   }
 }
@@ -55,7 +55,7 @@ impl<DB> Queryable<BigInt, DB> for U64
 }
 
 impl FromSql<BigInt, Pg> for U64 {
-  fn from_sql(bytes: Option<&<Pg as Backend>::RawValue>) -> Result<Self, Box<Error + Send + Sync>> {
+  fn from_sql(bytes: Option<&<Pg as Backend>::RawValue>) -> Result<Self, Box<dyn Error + Send + Sync>> {
     let mut bytes = match bytes {
       Some(b) => b,
       None => return Err(Box::new(SqlError::new("unexpected null")))
@@ -63,7 +63,7 @@ impl FromSql<BigInt, Pg> for U64 {
     bytes
       .read_u64::<<Pg as Backend>::ByteOrder>()
       .map(U64)
-      .map_err(|e| Box::new(e) as Box<Error + Send + Sync>)
+      .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
   }
 }
 
@@ -71,7 +71,7 @@ impl<DB> FromSqlRow<BigInt, DB> for U64
   where DB: Backend + HasSqlType<BigInt>,
         U64: FromSql<BigInt, DB>
 {
-  fn build_from_row<T: Row<DB>>(row: &mut T) -> Result<Self, Box<Error + Send + Sync>> {
+  fn build_from_row<T: Row<DB>>(row: &mut T) -> Result<Self, Box<dyn Error + Send + Sync>> {
     FromSql::from_sql(row.take())
   }
 }

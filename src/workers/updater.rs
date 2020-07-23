@@ -21,7 +21,7 @@ use r2d2::{Pool, PooledConnection};
 pub fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
   let db_pool = db_pool.clone();
 
-  std::thread::spawn(move || {
+  tokio::task::spawn(async move {
     let scraper = LodestoneScraper::default();
 
     let prevent_underflow = |conn: &PooledConnection<ConnectionManager<PgConnection>>| -> Result<()> {
@@ -35,8 +35,9 @@ pub fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
       Ok(())
     };
 
-    let update_character = |conn: &PooledConnection<ConnectionManager<PgConnection>>, c: &DatabaseCharacter| -> Result<()> {
-      let scraped = scraper.character(*c.id)?;
+    async fn update_character(db_pool: &Pool<ConnectionManager<PgConnection>>, c: &DatabaseCharacter, scraper: &LodestoneScraper) -> Result<()> {
+      let scraped = scraper.character(*c.id).await?;
+      let conn = db_pool.get()?;
       let val = serde_json::to_value(&scraped)?;
       diesel::update(characters::table)
         .set((
@@ -44,12 +45,13 @@ pub fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
           characters::data.eq(val),
         ))
         .filter(characters::id.eq(c.id))
-        .execute(&**conn)?;
-      std::thread::sleep(Duration::seconds(1).to_std().unwrap());
+        .execute(&conn)?;
+
+      tokio::time::delay_for(Duration::seconds(1).to_std().unwrap()).await;
       Ok(())
     };
 
-    let inner = || -> Result<()> {
+    let inner = async || -> Result<()> {
       let conn = db_pool.get()?;
       prevent_underflow(&conn)?;
       let sql = format!("exp(frecency - (extract(epoch from now()) * {:?}))", crate::frecency::DECAY);
@@ -63,17 +65,17 @@ pub fn updater(db_pool: &Pool<ConnectionManager<PgConnection>>) {
         .limit(100)
         .load(&*conn)?;
       for c in chars {
-        if let Err(e) = update_character(&conn, &c) {
+        if let Err(e) = update_character(&db_pool, &c, &scraper).await {
           eprintln!("error updating character {}: {}", *c.id, e);
         }
       }
       Ok(())
     };
     loop {
-      if let Err(e) = inner() {
+      if let Err(e) = inner().await {
         eprintln!("error in updater task: {}", e);
       }
-      std::thread::sleep(Duration::minutes(1).to_std().unwrap());
+      tokio::time::delay_for(Duration::minutes(1).to_std().unwrap()).await;
     }
   });
 }

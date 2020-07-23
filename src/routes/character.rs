@@ -15,12 +15,12 @@ use diesel::prelude::*;
 
 use lodestone_parser::models::character::Character;
 
-use redis::Commands;
+use r2d2_redis::redis::Commands;
 
 use rocket_contrib::json::Json;
 
 #[get("/character/<id>")]
-pub fn get(id: u64, conn: DbConn, redis: Redis) -> Result<Json<RouteResult<Character>>> {
+pub fn get(id: u64, conn: DbConn, mut redis: Redis) -> Result<Json<RouteResult<Character>>> {
   // get character stored in database
   let db_char: Option<DatabaseCharacter> = characters::table
     .find(U64(id))
@@ -40,7 +40,7 @@ pub fn get(id: u64, conn: DbConn, redis: Redis) -> Result<Json<RouteResult<Chara
     }));
   }
   // otherwise find result in redis and return it if present
-  if let Ok(Some((rr, _))) = crate::find_redis(&redis, &format!("character_{}", id)) {
+  if let Ok(Some((rr, _))) = crate::find_redis(&mut redis, &format!("character_{}", id)) {
     return Ok(Json(rr));
   }
   // if not, add it to the queue

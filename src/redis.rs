@@ -8,7 +8,7 @@ use rocket::{
   request::{self, FromRequest},
 };
 
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 pub fn pool() -> Pool<RedisConnectionManager> {
   let url = std::env::var("REDIS_URL")
@@ -39,5 +39,11 @@ impl Deref for Redis {
 
   fn deref(&self) -> &Self::Target {
       &self.0
+  }
+}
+
+impl DerefMut for Redis {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.0
   }
 }

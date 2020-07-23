@@ -21,6 +21,8 @@ use rocket::{State, request::Form};
 
 use rocket_contrib::json::Json;
 
+use tokio::runtime::Runtime;
+
 use std::{
   collections::hash_map::DefaultHasher,
   hash::{Hash, Hasher},
@@ -28,7 +30,7 @@ use std::{
 };
 
 #[get("/character/search?<data..>")]
-pub fn get(data: Form<CharacterSearchData>, scraper: State<LodestoneScraper>, redis: Redis) -> Result<Json<RouteResult<Paginated<CharacterSearchItem>>>> {
+pub fn get(data: Form<CharacterSearchData>, scraper: State<LodestoneScraper>, mut redis: Redis, runtime: State<Runtime>) -> Result<Json<RouteResult<Paginated<CharacterSearchItem>>>> {
   let data = data.into_inner();
   let search_key = format!("character_search_{}", data.as_hash());
   cached!(redis, search_key => {
@@ -72,7 +74,7 @@ pub fn get(data: Form<CharacterSearchData>, scraper: State<LodestoneScraper>, re
       }
     }
 
-    cs.send().into()
+    runtime.handle().block_on(cs.send()).into()
   })
 }
 
