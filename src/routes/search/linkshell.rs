@@ -28,10 +28,10 @@ use std::{
 use crate::cached;
 
 #[get("/linkshell/search?<data..>")]
-pub fn get(data: Form<LinkshellSearchData>, scraper: State<LodestoneScraper>, mut redis: Redis, runtime: State<Runtime>) -> Result<Json<RouteResult<Paginated<LinkshellSearchItem>>>> {
+pub fn get<'a>(data: Form<LinkshellSearchData>, scraper: State<LodestoneScraper>, mut redis: Redis<'a>, runtime: State<Runtime>) -> Result<Json<RouteResult<Paginated<LinkshellSearchItem>>>> {
   let data = data.into_inner();
   let key = format!("linkshell_search_{}", data.as_hash());
-  cached!(redis, key => {
+  cached!(runtime, redis, key => {
     let mut fcs = scraper.linkshell_search();
 
     if let Some(page) = data.page {

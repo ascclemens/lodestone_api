@@ -34,7 +34,7 @@ use crate::cached;
 pub fn get(data: Form<FreeCompanySearchData>, scraper: State<LodestoneScraper>, mut redis: Redis, runtime: State<Runtime>) -> Result<Json<RouteResult<Paginated<FreeCompanySearchItem>>>> {
   let data = data.into_inner();
   let key = format!("free_company_search_{}", data.as_hash());
-  cached!(redis, key => {
+  cached!(runtime, redis, key => {
     let mut fcs = scraper.free_company_search();
 
     if let Some(page) = data.page {

@@ -33,7 +33,7 @@ use std::{
 pub fn get(data: Form<CharacterSearchData>, scraper: State<LodestoneScraper>, mut redis: Redis, runtime: State<Runtime>) -> Result<Json<RouteResult<Paginated<CharacterSearchItem>>>> {
   let data = data.into_inner();
   let search_key = format!("character_search_{}", data.as_hash());
-  cached!(redis, search_key => {
+  cached!(runtime, redis, search_key => {
     let mut cs = scraper.character_search();
 
     if let Some(page) = data.page {

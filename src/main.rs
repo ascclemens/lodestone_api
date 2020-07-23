@@ -5,14 +5,14 @@
 use lodestone_scraper::LodestoneScraper;
 
 fn main() {
-  let db_pool = lodestone_api::database::pool();
-  let redis_pool = lodestone_api::redis::pool();
-
   let runtime = tokio::runtime::Builder::new()
     .threaded_scheduler()
     .enable_all()
     .build()
     .expect("could not create tokio runtime");
+
+  let db_pool = lodestone_api::database::pool();
+  let redis_pool = runtime.handle().block_on(lodestone_api::redis::pool());
 
   runtime.enter(|| lodestone_api::workers::queue(&redis_pool, &db_pool));
   runtime.enter(|| lodestone_api::workers::updater(&db_pool));

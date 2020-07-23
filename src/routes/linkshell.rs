@@ -45,7 +45,7 @@ impl LinkshellData {
 
 crate fn _get(id: u64, data: LinkshellData, scraper: State<LodestoneScraper>, mut redis: Redis, runtime: State<Runtime>) -> Result<Json<RouteResult<Linkshell>>> {
   let key = format!("linkshell_{}_{}", id, data.as_hash());
-  cached!(redis, key => {
+  cached!(runtime, redis, key => {
     runtime.handle().block_on(
       scraper
         .linkshell(id)
